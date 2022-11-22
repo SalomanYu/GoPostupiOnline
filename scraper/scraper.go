@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	
-	"github.com/SalomanYu/GoPostupiOnline/mongo"
+	"github.com/SalomanYu/GoPostupiOnline/excel"
 	"github.com/SalomanYu/GoPostupiOnline/models"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -66,8 +66,10 @@ func scrapeBasicInfo(h *colly.HTMLElement) (basic models.BasicInfo) {
 	basic.Image = h.ChildAttr("img", "data-dt")
 	basic.Cost = h.ChildText("span.list__price b")
 	basic.Name = h.ChildText("h2.list__h")
-	basic.Direction = h.ChildText("p.list__pre")
 	basic.Logo = h.ChildAttr("img.list__img-sm", "src")
+
+	re := regexp.MustCompile(`[а-яА-я]`)
+	basic.Direction = re.FindString(h.ChildText("p.list__pre"))
 	return 
 }
 
@@ -109,7 +111,7 @@ func ScrapeInstitution(h *colly.HTMLElement) {
 	scrapeContacts(basic.Url + "contacts/")
 	
 	// Сохраняем вуз
-	mongo.AddVuz(&institution)
+	excel.AddVuz(&institution)
 	log.Println("Parsed Vuz:")
 
 	// Забрали инфу о Вузе и его контактах, теперь парсим специальности этого вуза
@@ -141,7 +143,7 @@ func scrapeSpecializations(url string) {
 			if ok == false{
 				break
 			}
-			mongo.AddSpec(&spec)
+			excel.AddSpecialization(&spec)
 			log.Println("Specialization:")
 			scrapePrograms(spec.Base.Url, spec.SpecId)
 		}
@@ -200,7 +202,7 @@ func scrapePrograms(url string, specId string) {
 				break
 			}
 			program.SpecId = specId
-			mongo.AddProgram(&program)
+			excel.AddProgram(&program)
 			log.Println("Program: ")
 			ScrapeProfession(program.Base.Url)
 		}
@@ -272,7 +274,7 @@ func ScrapeProfession(programUrl string) {
 		newProfession.ProgramId = programId
 
 		// Сохраняем ее
-		mongo.AddProfession(&newProfession)
+		excel.AddProression(&newProfession)
 		log.Println("Profession: ")
 	})
 
@@ -303,7 +305,7 @@ func scrapeContacts(url string) {
 		}
 	})
 	c.Post(url, Headers)
-	mongo.AddContacts(&contact)
+	excel.AddContacts(&contact)
 	log.Println("Contact: ")
 }
 

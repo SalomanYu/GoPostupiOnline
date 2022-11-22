@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"log"
 	"time"
-	
+
 	"github.com/SalomanYu/GoPostupiOnline/scraper"
 
 	"github.com/gocolly/colly"
 )
 
 var (
-	domain               = "https://postupi.online/vuzi/"
-	pageCount            = 52
+	domain    = "https://postupi.online/vuzi/"
+	pageCount = 52
 
 )
 
