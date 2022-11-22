@@ -38,7 +38,7 @@ func AddVuz(vuz *models.InstitutionInfo) error{
 	_, err := collectionVuz.InsertOne(ctx, vuz)
 	return err
 }
-func AddSpec(spec *models.SpecializationInfo) error{
+func AddSpecialization(spec *models.SpecializationInfo) error{
 	_, err := collectionSpec.InsertOne(ctx, spec)
 	return err
 }

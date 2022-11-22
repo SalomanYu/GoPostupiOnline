@@ -1,18 +1,19 @@
 package scraper
 
 import (
-	"strings"
-	"strconv"
-	"regexp"
-	"log"
 	"fmt"
+	"log"
+	"regexp"
+	"strconv"
+	"strings"
 
-	
-	"github.com/SalomanYu/GoPostupiOnline/excel"
+	// "github.com/SalomanYu/GoPostupiOnline/excel"
+	"github.com/SalomanYu/GoPostupiOnline/mongo"
+
 	"github.com/SalomanYu/GoPostupiOnline/models"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"github.com/gocolly/colly"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -109,7 +110,7 @@ func ScrapeInstitution(h *colly.HTMLElement) {
 	scrapeContacts(basic.Url + "contacts/")
 	
 	// Сохраняем вуз
-	excel.AddVuz(&institution)
+	mongo.AddVuz(&institution)
 	log.Println("Parsed Vuz:")
 
 	// Забрали инфу о Вузе и его контактах, теперь парсим специальности этого вуза
@@ -141,7 +142,7 @@ func scrapeSpecializations(url string) {
 			if ok == false{
 				break
 			}
-			excel.AddSpecialization(&spec)
+			mongo.AddSpecialization(&spec)
 			log.Println("Specialization:")
 			scrapePrograms(spec.Base.Url, spec.SpecId)
 		}
@@ -203,7 +204,7 @@ func scrapePrograms(url string, specId string) {
 				break
 			}
 			program.SpecId = specId
-			excel.AddProgram(&program)
+			mongo.AddProgram(&program)
 			log.Println("Program: ")
 			ScrapeProfession(program.Base.Url)
 		}
@@ -276,7 +277,7 @@ func ScrapeProfession(programUrl string) {
 		newProfession.ProgramId = programId
 
 		// Сохраняем ее
-		excel.AddProression(&newProfession)
+		mongo.AddProfession(&newProfession)
 		log.Println("Profession: ")
 	})
 
@@ -307,7 +308,7 @@ func scrapeContacts(url string) {
 		}
 	})
 	c.Post(url, Headers)
-	excel.AddContacts(&contact)
+	mongo.AddContacts(&contact)
 	log.Println("Contact: ")
 }
 

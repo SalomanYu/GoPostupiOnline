@@ -125,7 +125,7 @@ func AddProgram(program *models.ProgramInfo){
 	}
 }
 
-func AddProression(prof *models.ProfessionInfo){
+func AddProfession(prof *models.ProfessionInfo){
 	ProfessionsRow++
 	ProfessionBook.SetCellValue("Sheet1", fmt.Sprintf("A%d", ProfessionsRow), ProfessionsRow)
 	ProfessionBook.SetCellValue("Sheet1", fmt.Sprintf("B%d", ProfessionsRow), prof.ProgramId)
