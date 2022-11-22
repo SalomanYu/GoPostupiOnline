@@ -67,9 +67,7 @@ func scrapeBasicInfo(h *colly.HTMLElement) (basic models.BasicInfo) {
 	basic.Cost = h.ChildText("span.list__price b")
 	basic.Name = h.ChildText("h2.list__h")
 	basic.Logo = h.ChildAttr("img.list__img-sm", "src")
-
-	re := regexp.MustCompile(`[а-яА-я]`)
-	basic.Direction = re.FindString(h.ChildText("p.list__pre"))
+	basic.Direction = h.ChildText("p.list__pre")
 	return 
 }
 
@@ -168,6 +166,9 @@ func scrapeOneSpecialization(h *colly.HTMLElement, channel chan models.Specializ
 	specialization.SpecId = currentSpecId
 	specialization.Base = basic
 	specialization.InstitutionId = currentInsitutionId
+	
+	re := regexp.MustCompile(`[а-яА-я]`)
+	specialization.Base.Direction = re.FindString(h.ChildText("p.list__pre"))
 
 	c := colly.NewCollector()
 	// Переходим на страницу специализации и пытаемся спарсить подробное описание, если его нет. То будет краткое описание в specialization.Base.Description
@@ -224,6 +225,7 @@ func scrapeOneProgram(h *colly.HTMLElement, channel chan models.ProgramInfo) {
 	}
 	program.ID = primitive.NewObjectID()
 	program.InstitutionId = currentInsitutionId
+	program.ProgramId = strings.Split(program.Base.Url, "/")[len(strings.Split(program.Base.Url, "/"))-2]
 	c := colly.NewCollector()
 
 	// Забираем полное наименование программы 
