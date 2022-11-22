@@ -2,9 +2,10 @@ package mongo
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/SalomanYu/GoPostupiOnline/models"
-	
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -16,6 +17,7 @@ var (
 	collectionContacts 		*mongo.Collection
 	collectionProfession 	*mongo.Collection
 	ctx 				 =  context.TODO()
+	vuzCount int
 
 )
 
@@ -36,6 +38,8 @@ func init(){
 
 func AddVuz(vuz *models.InstitutionInfo) error{
 	_, err := collectionVuz.InsertOne(ctx, vuz)
+	vuzCount++
+	fmt.Printf("%d. Vuz: %s\n", vuzCount, vuz.InstitutionId)
 	return err
 }
 func AddSpecialization(spec *models.SpecializationInfo) error{
