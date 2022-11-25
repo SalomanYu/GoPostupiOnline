@@ -122,13 +122,16 @@ func scrapeManySpecializations(url string) {
 		for i:=0; i<countSpecs; i++ {
 			spec, ok := <- channelSpec
 			if ok == false{
+				log.Println("ok == false в канале специализаций")
 				break
 			}
 			err = mongo.AddSpecialization(&spec)
 			checkErr(err)
-			log.Println("Specialization:")
+			// log.Println("Specialization:")
 			scrapeManyPrograms(spec.Base.Url, spec.SpecId)
 		}
+		close(channelSpec)
+		log.Println("Закончили читать канал специализаций")
 		if hasSpecs == false {
 			break
 		} else {
@@ -183,6 +186,7 @@ func scrapeManyPrograms(url string, specId string) {
 		for i:=0; i<countPrograms; i++ {
 			program, ok := <- channelProgram
 			if ok == false{
+				log.Println("ok==false в канале программ")
 				break
 			}
 			program.SpecId = specId
@@ -191,6 +195,8 @@ func scrapeManyPrograms(url string, specId string) {
 			log.Println("Program: ")
 			ScrapeProfessions(program.Base.Url)
 		}
+		close(channelProgram)
+		log.Println("закончили работу в канале программ")
 		if hasPrograms == false {
 			break
 		} else {
@@ -260,7 +266,7 @@ func ScrapeProfessions(programUrl string) {
 
 		err := mongo.AddProfession(&newProfession)
 		checkErr(err)
-		log.Println("Profession: ")
+		// log.Println("Profession: ")
 	})
 
 	err := c.Post(programUrl + "professii/", Headers)
