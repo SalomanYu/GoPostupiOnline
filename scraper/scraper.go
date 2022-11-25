@@ -237,14 +237,15 @@ func scrapeOneProgram(h *colly.HTMLElement, channel chan models.Program) {
 }
 
 func ScrapeProfessions(programUrl string) {
-	newProfession := models.Profession{}
-	newProfession.ID = primitive.NewObjectID()
+	
 	c := colly.NewCollector()
 
 	// Забираем айдишник программы из url професси. Берем 477 из https://msk.postupi.online/vuz/mip/programma/477/
 	programId := strings.Split(programUrl, "/")[len(strings.Split(programUrl, "/"))-2]
 
-	c.OnHTML("li.list-col", func(h *colly.HTMLElement) {
+	c.OnHTML("div.list-cover li", func(h *colly.HTMLElement) {
+		newProfession := models.Profession{}
+		newProfession.ID = primitive.NewObjectID()
 		newProfession.Name = h.ChildText("h2")
 		newProfession.Image = h.ChildAttr("img.img-load", "data-dt")
 		newProfession.ProgramId = programId
