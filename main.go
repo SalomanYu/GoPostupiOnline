@@ -29,7 +29,6 @@ func main() {
 		})
 		err := c.Post(url, scraper.Headers)
 		check_err(err)
-		panic("Er")
 	}
 	var a string
 	log.Printf("\n\nTime: %d", time.Now().Unix()-start)
