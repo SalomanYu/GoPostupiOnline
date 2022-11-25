@@ -92,7 +92,8 @@ func ScrapeVuz(h *colly.HTMLElement) {
 	err := c.Post(basic.Url, Headers)
 	checkErr(err)
 	scrapeContacts(basic.Url + "contacts/")
-	mongo.AddVuz(&institution)
+	err = mongo.AddVuz(&institution)
+	checkErr(err)
 	log.Println("Parsed Vuz:")
 	for _, form := range formEducation {
 		scrapeManySpecializations(basic.Url + form)
@@ -123,7 +124,8 @@ func scrapeManySpecializations(url string) {
 			if ok == false{
 				break
 			}
-			mongo.AddSpecialization(&spec)
+			err = mongo.AddSpecialization(&spec)
+			checkErr(err)
 			log.Println("Specialization:")
 			scrapeManyPrograms(spec.Base.Url, spec.SpecId)
 		}
@@ -184,7 +186,8 @@ func scrapeManyPrograms(url string, specId string) {
 				break
 			}
 			program.SpecId = specId
-			mongo.AddProgram(&program)
+			err = mongo.AddProgram(&program)
+			checkErr(err)
 			log.Println("Program: ")
 			ScrapeProfessions(program.Base.Url)
 		}
@@ -255,7 +258,8 @@ func ScrapeProfessions(programUrl string) {
 		newProfession.Image = h.ChildAttr("img.img-load", "data-dt")
 		newProfession.ProgramId = programId
 
-		mongo.AddProfession(&newProfession)
+		err := mongo.AddProfession(&newProfession)
+		checkErr(err)
 		log.Println("Profession: ")
 	})
 
@@ -286,7 +290,8 @@ func scrapeContacts(url string) {
 	})
 	err := c.Post(url, Headers)
 	checkErr(err)
-	mongo.AddContacts(&contact)
+	err = mongo.AddContacts(&contact)
+	checkErr(err)
 	log.Println("Contact: ")
 }
 
