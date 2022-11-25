@@ -24,7 +24,7 @@ func main() {
 		c := colly.NewCollector()
 		c.OnHTML("div.list-cover li.list", func(h *colly.HTMLElement) {
 			h.ForEach("div.list__info", func(i int, h *colly.HTMLElement) {
-				scraper.ScrapeInstitution(h)
+				scraper.ScrapeVuz(h)
 			})
 		})
 		err := c.Post(url, scraper.Headers)

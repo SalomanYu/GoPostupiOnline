@@ -36,25 +36,25 @@ func init(){
 	collectionContacts = client.Database("PostupiOnline").Collection("Contacts")
 }
 
-func AddVuz(vuz *models.InstitutionInfo) error{
+func AddVuz(vuz *models.Vuz) error{
 	_, err := collectionVuz.InsertOne(ctx, vuz)
 	vuzCount++
-	fmt.Printf("%d. Vuz: %s\n", vuzCount, vuz.InstitutionId)
+	fmt.Printf("%d. Vuz: %s\n", vuzCount, vuz.VuzId)
 	return err
 }
-func AddSpecialization(spec *models.SpecializationInfo) error{
+func AddSpecialization(spec *models.Specialization) error{
 	_, err := collectionSpec.InsertOne(ctx, spec)
 	return err
 }
-func AddProgram(program *models.ProgramInfo) error{
+func AddProgram(program *models.Program) error{
 	_, err := collectionProgram.InsertOne(ctx, program)
 	return err
 }
-func AddProfession(profession *models.ProfessionInfo) error{
+func AddProfession(profession *models.Profession) error{
 	_, err := collectionProfession.InsertOne(ctx, profession)
 	return err
 }
-func AddContacts(contacts *models.ContactsInfo) error{
+func AddContacts(contacts *models.Contacts) error{
 	_, err := collectionContacts.InsertOne(ctx, contacts)
 	return err
 }

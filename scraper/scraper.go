@@ -7,52 +7,43 @@ import (
 	"strconv"
 	"strings"
 
-	// "github.com/SalomanYu/GoPostupiOnline/excel"
-	"github.com/SalomanYu/GoPostupiOnline/mongo"
-
+	"github.com/SalomanYu/GoPostupiOnline/storages/mongo"
 	"github.com/SalomanYu/GoPostupiOnline/models"
 
 	"github.com/gocolly/colly"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var (
-	currentInsitutionId    string
-	currentSpecId          string
-	formEducation       = []string{"specialnosti/bakalavr/", "specialnosti/specialist/", "specialnosti/magistratura/"}
-	Headers 			= map[string]string{
-							"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
-							"sec-ch-ua":  `Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"`,
-							"accept":     "image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-							"cookie":     "yandexuid=6850906421666216763; yabs-sid=1696581601666216766; yuidss=6850906421666216763; ymex=1981576766.yrts.1666216766#1981576766.yrtsi.1666216766; gdpr=0; _ym_uid=1666216766168837185; _ym_d=1666216766; yandex_login=rosya-8; i=Peh4utbtslQvge42D7cbDtH7CwXIiDs5Yp6IXWYsxx/SEQD1HtUncw/qqJV7NXqNqOS81fsaJSedcq/Ds9+yOfVKCNQ=; is_gdpr=0; skid=6879224341667473690; ys=udn.cDrQr9GA0L7RgdC70LDQsg%3D%3D#c_chck.841052032; is_gdpr_b=CIyaHxCclAE=; Session_id=3:1668355426.5.0.1666216795333:P19ouQ:2f.1.2:1|711384492.0.2|3:10261113.753043.lm80KKusrHll2DmXDLpHMjsmBYY; sessionid2=3:1668355426.5.0.1666216795333:P19ouQ:2f.1.2:1|711384492.0.2|3:10261113.753043.fakesign0000000000000000000; _ym_isad=1; _ym_visorc=b",
-						}
-)
+var currentVuzId, currentSpecId string
+var formEducation = []string{"specialnosti/bakalavr/", "specialnosti/specialist/", "specialnosti/magistratura/"}
+var Headers = map[string]string{
+			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
+			"sec-ch-ua":  `Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"`,
+			"accept":     "image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+			"cookie":     "yandexuid=6850906421666216763; yabs-sid=1696581601666216766; yuidss=6850906421666216763; ymex=1981576766.yrts.1666216766#1981576766.yrtsi.1666216766; gdpr=0; _ym_uid=1666216766168837185; _ym_d=1666216766; yandex_login=rosya-8; i=Peh4utbtslQvge42D7cbDtH7CwXIiDs5Yp6IXWYsxx/SEQD1HtUncw/qqJV7NXqNqOS81fsaJSedcq/Ds9+yOfVKCNQ=; is_gdpr=0; skid=6879224341667473690; ys=udn.cDrQr9GA0L7RgdC70LDQsg%3D%3D#c_chck.841052032; is_gdpr_b=CIyaHxCclAE=; Session_id=3:1668355426.5.0.1666216795333:P19ouQ:2f.1.2:1|711384492.0.2|3:10261113.753043.lm80KKusrHll2DmXDLpHMjsmBYY; sessionid2=3:1668355426.5.0.1666216795333:P19ouQ:2f.1.2:1|711384492.0.2|3:10261113.753043.fakesign0000000000000000000; _ym_isad=1; _ym_visorc=b",
+		}
 
 
-func scrapeBasicInfo(h *colly.HTMLElement) (basic models.BasicInfo) {
-	// Если нет краткой инфы о вузе/специальности/программе, то возвращаем пустую структуру
-	score_list := h.ChildText("p.list__score")
-	if score_list == "" {
+func scrapeBasic(h *colly.HTMLElement) (basic models.Basic) {
+	if h.ChildText("p.list__score") == "" {
 		return 
 	}
 
-	// Парсим краткое описание
 	h.ForEach("div.list__info p", func(i int, e *colly.HTMLElement) {
 		if i == 1{
 			basic.Description = e.Text
 		}
 	})
 
-	// Парсим блок и с инфой о бюджетных и платных местах и баллах для поступления
 	h.ForEach("div.list__score-wrap p", func(i int, e *colly.HTMLElement) {
 		if strings.Contains(e.Text, "бал.бюджет"){
-			score, err := strconv.ParseFloat(e.ChildText("b"), 64)
-			check_err(err)
-			basic.BudgetScore = score
+			scores, err := strconv.ParseFloat(e.ChildText("b"), 64)
+			checkErr(err)
+			basic.BudgetScores = scores
 		}else if strings.Contains(e.Text, "бал.платно"){
-			score, err := strconv.ParseFloat(e.ChildText("b"), 64)
-			check_err(err)
-			basic.PaymentScore = score
+			scores, err := strconv.ParseFloat(e.ChildText("b"), 64)
+			checkErr(err)
+			basic.PaymentScores = scores
 		}else if strings.Contains(e.Text, "бюджетных мест") && !strings.Contains("нет", e.ChildText("b")){
 			places := e.ChildText("b")
 			basic.BudgetPlaces = places
@@ -62,7 +53,6 @@ func scrapeBasicInfo(h *colly.HTMLElement) (basic models.BasicInfo) {
 		}
 	})
 
-	// Наполняем оставшим контентом структуру
 	basic.Url = h.ChildAttr("a", "href")
 	basic.Image = h.ChildAttr("img", "data-dt")
 	basic.Cost = h.ChildText("span.list__price b")
@@ -73,34 +63,27 @@ func scrapeBasicInfo(h *colly.HTMLElement) (basic models.BasicInfo) {
 }
 
 
-func ScrapeInstitution(h *colly.HTMLElement) {
-	institution := models.InstitutionInfo{}
+func ScrapeVuz(h *colly.HTMLElement) {
+	institution := models.Vuz{}
 	institution.ID = primitive.NewObjectID()
-	basic := scrapeBasicInfo(h)
-	if basic == (models.BasicInfo{}){
+	basic := scrapeBasic(h)
+	if basic == (models.Basic{}){
 		return 
 	}
 	c := colly.NewCollector()
-
-	// Меняем действующий айди вуза на актуальный
-	institution.InstitutionId = strings.Split(basic.Url, "/")[len(strings.Split(basic.Url, "/"))-2]
-	currentInsitutionId = institution.InstitutionId
+	institution.VuzId = strings.Split(basic.Url, "/")[len(strings.Split(basic.Url, "/"))-2]
+	currentVuzId = institution.VuzId
 	institution.Base = basic
 
-	// Пробуем достать полное название Вуза и поменять его с тем, что предлагает метод scrapemodels.BasicInfo 
 	c.OnHTML("h1.bg-nd__h", func(h *colly.HTMLElement) {
 		name := h.Text
 		if name != "" {
 			institution.Base.Name = name
 		}
 	})
-
-	// Достаем описание вуза 
 	c.OnHTML("div.descr-min", func(h *colly.HTMLElement) {
 		institution.Description = h.Text
 	})
-
-	// Парсим факты вуза и добавляем их к описанию Вуза
 	c.OnHTML("ul.facts-list-nd li", func(h *colly.HTMLElement) {
 		facts := h.Text
 		institution.Description += "\nФакты: " + facts
@@ -108,24 +91,20 @@ func ScrapeInstitution(h *colly.HTMLElement) {
 
 	c.Post(basic.Url, Headers)
 	scrapeContacts(basic.Url + "contacts/")
-	
-	// Сохраняем вуз
 	mongo.AddVuz(&institution)
 	log.Println("Parsed Vuz:")
-
-	// Забрали инфу о Вузе и его контактах, теперь парсим специальности этого вуза
 	for _, form := range formEducation {
-		scrapeSpecializations(basic.Url + form)
+		scrapeManySpecializations(basic.Url + form)
 	}
 }
 
 // $Env:GOOS = "linux"; $Env:GOARCH = "amd64"
 
-func scrapeSpecializations(url string) {	
+func scrapeManySpecializations(url string) {	
 	page := 1
 	for {
 		hasSpecs := false
-		channelSpec := make(chan models.SpecializationInfo)
+		channelSpec := make(chan models.Specialization)
 		countSpecs := 0
 
 		c := colly.NewCollector()
@@ -144,9 +123,8 @@ func scrapeSpecializations(url string) {
 			}
 			mongo.AddSpecialization(&spec)
 			log.Println("Specialization:")
-			scrapePrograms(spec.Base.Url, spec.SpecId)
+			scrapeManyPrograms(spec.Base.Url, spec.SpecId)
 		}
-		// Проверяем, есть ли на странице специализации или мы вышли за рамки пагинации
 		if hasSpecs == false {
 			break
 		} else {
@@ -156,23 +134,22 @@ func scrapeSpecializations(url string) {
 }
 
 
-func scrapeOneSpecialization(h *colly.HTMLElement, channel chan models.SpecializationInfo){ 
-	specialization := models.SpecializationInfo{}
-	basic := scrapeBasicInfo(h)
-	if basic == (models.BasicInfo{}){
+func scrapeOneSpecialization(h *colly.HTMLElement, channel chan models.Specialization){ 
+	specialization := models.Specialization{}
+	basic := scrapeBasic(h)
+	if basic == (models.Basic{}){
 		return
 	}
 	specialization.ID = primitive.NewObjectID()
 	currentSpecId = strings.Split(basic.Url, "/")[len(strings.Split(basic.Url, "/"))-2]
 	specialization.SpecId = currentSpecId
 	specialization.Base = basic
-	specialization.InstitutionId = currentInsitutionId
+	specialization.VuzId = currentVuzId
 	
 	re := regexp.MustCompile(`[а-яА-я]`)
 	specialization.Base.Direction = re.FindString(h.ChildText("p.list__pre"))
 
 	c := colly.NewCollector()
-	// Переходим на страницу специализации и пытаемся спарсить подробное описание, если его нет. То будет краткое описание в specialization.Base.Description
 	c.OnHTML("div.descr-max", func(h *colly.HTMLElement) {
 		specialization.Description = h.Text
 	})
@@ -182,11 +159,11 @@ func scrapeOneSpecialization(h *colly.HTMLElement, channel chan models.Specializ
 }
 
 
-func scrapePrograms(url string, specId string) {
+func scrapeManyPrograms(url string, specId string) {
 	page := 1
 	for {
 		hasPrograms := false
-		channelProgram := make(chan models.ProgramInfo)
+		channelProgram := make(chan models.Program)
 		countPrograms := 0
 
 		c := colly.NewCollector()
@@ -197,7 +174,6 @@ func scrapePrograms(url string, specId string) {
 
 		})
 		c.Post(fmt.Sprintf("%s?page_num=%d", url, page), Headers)
-		
 		for i:=0; i<countPrograms; i++ {
 			program, ok := <- channelProgram
 			if ok == false{
@@ -206,10 +182,8 @@ func scrapePrograms(url string, specId string) {
 			program.SpecId = specId
 			mongo.AddProgram(&program)
 			log.Println("Program: ")
-			ScrapeProfession(program.Base.Url)
+			ScrapeProfessions(program.Base.Url)
 		}
-
-		// Проверяем, есть ли на странице программы или мы вышли за рамки пагинации
 		if hasPrograms == false {
 			break
 		} else {
@@ -218,14 +192,14 @@ func scrapePrograms(url string, specId string) {
 	}
 }
 
-func scrapeOneProgram(h *colly.HTMLElement, channel chan models.ProgramInfo) { 
-	program := models.ProgramInfo{}
-	program.Base = scrapeBasicInfo(h)
-	if program.Base == (models.BasicInfo{}){
+func scrapeOneProgram(h *colly.HTMLElement, channel chan models.Program) { 
+	program := models.Program{}
+	program.Base = scrapeBasic(h)
+	if program.Base == (models.Basic{}){
 		return
 	}
 	program.ID = primitive.NewObjectID()
-	program.InstitutionId = currentInsitutionId
+	program.VuzId = currentVuzId
 	program.ProgramId = strings.Split(program.Base.Url, "/")[len(strings.Split(program.Base.Url, "/"))-2]
 	c := colly.NewCollector()
 
@@ -262,32 +236,29 @@ func scrapeOneProgram(h *colly.HTMLElement, channel chan models.ProgramInfo) {
 	channel <- program
 }
 
-func ScrapeProfession(programUrl string) {
-	newProfession := models.ProfessionInfo{}
+func ScrapeProfessions(programUrl string) {
+	newProfession := models.Profession{}
 	newProfession.ID = primitive.NewObjectID()
 	c := colly.NewCollector()
 
 	// Забираем айдишник программы из url професси. Берем 477 из https://msk.postupi.online/vuz/mip/programma/477/
 	programId := strings.Split(programUrl, "/")[len(strings.Split(programUrl, "/"))-2]
 
-	// Наполняем контентом нашу профессию
 	c.OnHTML("li.list-col", func(h *colly.HTMLElement) {
 		newProfession.Name = h.ChildText("h2")
 		newProfession.Image = h.ChildAttr("img.img-load", "data-dt")
 		newProfession.ProgramId = programId
 
-		// Сохраняем ее
 		mongo.AddProfession(&newProfession)
 		log.Println("Profession: ")
 	})
 
-	// Отправляем запрос на страницу с профессиями конкретной программы 
 	c.Post(programUrl + "professii/", Headers)
 }
 
 
 func scrapeContacts(url string) {
-	contact := models.ContactsInfo{}
+	contact := models.Contacts{}
 	contact.ID = primitive.NewObjectID()
 	c := colly.NewCollector()
 
@@ -298,13 +269,12 @@ func scrapeContacts(url string) {
 			contactList[i] = e.Text
 		})
 
-		// Наполняем контентом контакты
 		if contactList[0] != "" {
 			contact.WebSite = contactList[0]
 			contact.Email = contactList[1]
 			contact.Phone = contactList[2]
 			contact.Address = contactList[3]
-			contact.VuzId = currentInsitutionId
+			contact.VuzId = currentVuzId
 		}
 	})
 	c.Post(url, Headers)
@@ -312,7 +282,7 @@ func scrapeContacts(url string) {
 	log.Println("Contact: ")
 }
 
-func check_err(err error){
+func checkErr(err error){
 	if err != nil{
 		log.Fatal(err)
 		panic(err)
