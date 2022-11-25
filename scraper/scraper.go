@@ -89,7 +89,8 @@ func ScrapeVuz(h *colly.HTMLElement) {
 		institution.Description += "\nФакты: " + facts
 	})
 
-	c.Post(basic.Url, Headers)
+	err := c.Post(basic.Url, Headers)
+	checkErr(err)
 	scrapeContacts(basic.Url + "contacts/")
 	mongo.AddVuz(&institution)
 	log.Println("Parsed Vuz:")
@@ -114,8 +115,9 @@ func scrapeManySpecializations(url string) {
 			go scrapeOneSpecialization(h, channelSpec)
 
 		})
-		c.Post(fmt.Sprintf("%s?page_num=%d", url, page), Headers)
-		
+		err := c.Post(fmt.Sprintf("%s?page_num=%d", url, page), Headers)
+		checkErr(err)
+
 		for i:=0; i<countSpecs; i++ {
 			spec, ok := <- channelSpec
 			if ok == false{
@@ -154,7 +156,8 @@ func scrapeOneSpecialization(h *colly.HTMLElement, channel chan models.Specializ
 		specialization.Description = h.Text
 	})
 	
-	c.Post(basic.Url, Headers)
+	err := c.Post(basic.Url, Headers)
+	checkErr(err)
 	channel <- specialization
 }
 
@@ -173,7 +176,8 @@ func scrapeManyPrograms(url string, specId string) {
 			go scrapeOneProgram(h, channelProgram)
 
 		})
-		c.Post(fmt.Sprintf("%s?page_num=%d", url, page), Headers)
+		err := c.Post(fmt.Sprintf("%s?page_num=%d", url, page), Headers)
+		checkErr(err)
 		for i:=0; i<countPrograms; i++ {
 			program, ok := <- channelProgram
 			if ok == false{
@@ -232,7 +236,8 @@ func scrapeOneProgram(h *colly.HTMLElement, channel chan models.Program) {
 		})
 	})
 
-	c.Post(program.Base.Url, Headers)
+	err := c.Post(program.Base.Url, Headers)
+	checkErr(err)
 	channel <- program
 }
 
@@ -254,7 +259,8 @@ func ScrapeProfessions(programUrl string) {
 		log.Println("Profession: ")
 	})
 
-	c.Post(programUrl + "professii/", Headers)
+	err := c.Post(programUrl + "professii/", Headers)
+	checkErr(err)
 }
 
 
@@ -278,7 +284,8 @@ func scrapeContacts(url string) {
 			contact.VuzId = currentVuzId
 		}
 	})
-	c.Post(url, Headers)
+	err := c.Post(url, Headers)
+	checkErr(err)
 	mongo.AddContacts(&contact)
 	log.Println("Contact: ")
 }
