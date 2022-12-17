@@ -3,12 +3,12 @@ package scraper
 import (
 	"fmt"
 	"log"
-	"regexp"
-	"strconv"
 	"strings"
+	"sync"
+	"time"
 
-	"github.com/SalomanYu/GoPostupiOnline/storages/mongo"
 	"github.com/SalomanYu/GoPostupiOnline/models"
+	"github.com/SalomanYu/GoPostupiOnline/storages/mongo"
 
 	"github.com/gocolly/colly"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,243 +21,174 @@ var Headers = map[string]string{
 			"sec-ch-ua":  `Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"`,
 			"accept":     "image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
 			"cookie":     "yandexuid=6850906421666216763; yabs-sid=1696581601666216766; yuidss=6850906421666216763; ymex=1981576766.yrts.1666216766#1981576766.yrtsi.1666216766; gdpr=0; _ym_uid=1666216766168837185; _ym_d=1666216766; yandex_login=rosya-8; i=Peh4utbtslQvge42D7cbDtH7CwXIiDs5Yp6IXWYsxx/SEQD1HtUncw/qqJV7NXqNqOS81fsaJSedcq/Ds9+yOfVKCNQ=; is_gdpr=0; skid=6879224341667473690; ys=udn.cDrQr9GA0L7RgdC70LDQsg%3D%3D#c_chck.841052032; is_gdpr_b=CIyaHxCclAE=; Session_id=3:1668355426.5.0.1666216795333:P19ouQ:2f.1.2:1|711384492.0.2|3:10261113.753043.lm80KKusrHll2DmXDLpHMjsmBYY; sessionid2=3:1668355426.5.0.1666216795333:P19ouQ:2f.1.2:1|711384492.0.2|3:10261113.753043.fakesign0000000000000000000; _ym_isad=1; _ym_visorc=b",
+			"Content-Type": "text/html",
 		}
-
-
-func scrapeBasic(h *colly.HTMLElement) (basic models.Basic) {
-	if h.ChildText("p.list__score") == "" {
-		return 
-	}
-
-	h.ForEach("div.list__info p", func(i int, e *colly.HTMLElement) {
-		if i == 1{
-			basic.Description = e.Text
-		}
-	})
-
-	h.ForEach("div.list__score-wrap p", func(i int, e *colly.HTMLElement) {
-		if strings.Contains(e.Text, "бал.бюджет"){
-			scores, err := strconv.ParseFloat(e.ChildText("b"), 64)
-			checkErr(err)
-			basic.BudgetScores = scores
-		}else if strings.Contains(e.Text, "бал.платно"){
-			scores, err := strconv.ParseFloat(e.ChildText("b"), 64)
-			checkErr(err)
-			basic.PaymentScores = scores
-		}else if strings.Contains(e.Text, "бюджетных мест") && !strings.Contains("нет", e.ChildText("b")){
-			places := e.ChildText("b")
-			basic.BudgetPlaces = places
-		}else if strings.Contains(e.Text, "платных мест") && !strings.Contains("нет", e.ChildText("b")){
-			places := e.ChildText("b")
-			basic.PaymentPlaces = places
-		}
-	})
-
-	basic.Url = h.ChildAttr("a", "href")
-	basic.Image = h.ChildAttr("img", "data-dt")
-	basic.Cost = h.ChildText("span.list__price b")
-	basic.Name = h.ChildText("h2.list__h")
-	basic.Logo = h.ChildAttr("img.list__img-sm", "src")
-	basic.Direction = h.ChildText("p.list__pre")
-	return 
-}
-
 
 func ScrapeVuz(h *colly.HTMLElement) {
+	// Надо еще рефачить и делить метод
+	basic := scrapeBasic(h)
+	if !hasBasicInfo(basic){
+		return
+	}
 	institution := models.Vuz{}
 	institution.ID = primitive.NewObjectID()
-	basic := scrapeBasic(h)
-	if basic == (models.Basic{}){
-		return 
-	}
-	c := colly.NewCollector()
 	institution.VuzId = strings.Split(basic.Url, "/")[len(strings.Split(basic.Url, "/"))-2]
 	currentVuzId = institution.VuzId
 	institution.Base = basic
-
-	c.OnHTML("h1.bg-nd__h", func(h *colly.HTMLElement) {
-		name := h.Text
-		if name != "" {
-			institution.Base.Name = name
-		}
-	})
-	c.OnHTML("div.descr-min", func(h *colly.HTMLElement) {
-		institution.Description = h.Text
-	})
-	c.OnHTML("ul.facts-list-nd li", func(h *colly.HTMLElement) {
-		facts := h.Text
-		institution.Description += "\nФакты: " + facts
-	})
-
-	err := c.Post(basic.Url, Headers)
-	checkErr(err)
-	scrapeContacts(basic.Url + "contacts/")
+	bodyHTML, err := getBodyCodeFromUrl(institution.Base.Url)
+	if err != nil{
+		time.Sleep(10*time.Second)
+	}
+	institution.Description = getMiniDescription(bodyHTML)
+	fullname := getFullDescription(bodyHTML)
+	if fullname != ""{
+		institution.Base.Name = fullname
+	}
+	facts := getFacts(bodyHTML)
+	if facts != ""{
+		institution.Description += facts
+	}
+	err = scrapeContacts(basic.Url + "contacts/")
+	if err != nil{
+		fmt.Println("Catched the error. Program stopped to sleep of 10 seconds.")
+		time.Sleep(10*time.Second)
+		err = scrapeContacts(basic.Url + "contacts/")
+		checkErr(err)
+	}
 	err = mongo.AddVuz(&institution)
 	checkErr(err)
-	log.Println("Parsed Vuz:")
+	log.Printf("Vuz:%s", institution.VuzId)
 	for _, form := range formEducation {
-		scrapeManySpecializations(basic.Url + form)
+		scrapeVuzSpecializations(basic.Url + form)
 	}
 }
 
-// $Env:GOOS = "linux"; $Env:GOARCH = "amd64"
-
-func scrapeManySpecializations(url string) {	
+func scrapeVuzSpecializations(url string) {	
 	page := 1
 	for {
-		hasSpecs := false
-		channelSpec := make(chan models.Specialization)
-		countSpecs := 0
-
-		c := colly.NewCollector()
-		c.OnHTML("div.list-cover li", func(h *colly.HTMLElement) {
-			hasSpecs = true
-			countSpecs++
-			go scrapeOneSpecialization(h, channelSpec)
-
-		})
-		err := c.Post(fmt.Sprintf("%s?page_num=%d", url, page), Headers)
-		checkErr(err)
-
-		for i:=0; i<countSpecs; i++ {
-			spec, ok := <- channelSpec
-			if ok == false{
-				log.Println("ok == false в канале специализаций")
-				break
-			}
-			err = mongo.AddSpecialization(&spec)
+		specsBlocks, err := findHtmlBlocks(fmt.Sprintf("%s?page_num=%d", url, page))
+		if err != nil{
+			fmt.Println("Catched the error. Program stopped to sleep of 10 seconds.")
+			time.Sleep(10*time.Second)
+			blocks, err := findHtmlBlocks(fmt.Sprintf("%s?page_num=%d", url, page))
 			checkErr(err)
-			// log.Println("Specialization:")
-			scrapeManyPrograms(spec.Base.Url, spec.SpecId)
-		}
-		close(channelSpec)
-		log.Println("Закончили читать канал специализаций")
-		if hasSpecs == false {
+			specsBlocks = blocks
+		} 
+		if len(specsBlocks) == 0 {
 			break
-		} else {
-			page++
 		}
+		var wg sync.WaitGroup
+		wg.Add(len(specsBlocks))
+		for _, spec := range specsBlocks{
+			go scrapeSpecialization(spec, &wg)
+		}
+		wg.Wait()
+		page++
 	}
 }
 
-
-func scrapeOneSpecialization(h *colly.HTMLElement, channel chan models.Specialization){ 
-	specialization := models.Specialization{}
+func scrapeSpecialization(h *colly.HTMLElement, wg *sync.WaitGroup){ 
+	// надо дорефачить
 	basic := scrapeBasic(h)
-	if basic == (models.Basic{}){
+	if !hasBasicInfo(basic){
 		return
 	}
+	specialization := models.Specialization{}
 	specialization.ID = primitive.NewObjectID()
 	currentSpecId = strings.Split(basic.Url, "/")[len(strings.Split(basic.Url, "/"))-2]
 	specialization.SpecId = currentSpecId
 	specialization.Base = basic
 	specialization.VuzId = currentVuzId
+	bodyHTML, err := getBodyCodeFromUrl(specialization.Base.Url)
+	if err != nil{
+		fmt.Println("Catched the error. Program stopped to sleep of 10 seconds.")
+		time.Sleep(10*time.Second)
+		html, err := getBodyCodeFromUrl(specialization.Base.Url)
+		checkErr(err)
+		bodyHTML = html
+	}
+	specialization.Base.Direction = getSpecializationDirection(h, specialization.SpecId)
+	specialization.Description = getSpecializationDescription(bodyHTML)
 	
-	re := regexp.MustCompile(`[а-яА-я]`)
-	specialization.Base.Direction = re.FindString(h.ChildText("p.list__pre"))
-
-	c := colly.NewCollector()
-	c.OnHTML("div.descr-max", func(h *colly.HTMLElement) {
-		specialization.Description = h.Text
-	})
-	
-	err := c.Post(basic.Url, Headers)
+	err = mongo.AddSpecialization(&specialization)
 	checkErr(err)
-	channel <- specialization
+	log.Printf("Specialization:%s", specialization.SpecId)
+	scrapeSpecializationPrograms(specialization.Base.Url, specialization.SpecId)
+	wg.Done()
 }
 
-
-func scrapeManyPrograms(url string, specId string) {
+func scrapeSpecializationPrograms(url string, specId string) {
 	page := 1
 	for {
-		hasPrograms := false
-		channelProgram := make(chan models.Program)
-		countPrograms := 0
-
-		c := colly.NewCollector()
-		c.OnHTML("div.list-cover li", func(h *colly.HTMLElement) {
-			hasPrograms = true
-			countPrograms++
-			go scrapeOneProgram(h, channelProgram)
-
-		})
-		err := c.Post(fmt.Sprintf("%s?page_num=%d", url, page), Headers)
-		checkErr(err)
-		for i:=0; i<countPrograms; i++ {
-			program, ok := <- channelProgram
-			if ok == false{
-				log.Println("ok==false в канале программ")
-				break
-			}
-			program.SpecId = specId
-			err = mongo.AddProgram(&program)
+		programsBlocks, err := findHtmlBlocks(fmt.Sprintf("%s?page_num=%d", url, page))
+		if err != nil{
+			fmt.Println("Catched the error. Program stopped to sleep of 10 seconds.")
+			time.Sleep(10*time.Second)
+			blocks, err := findHtmlBlocks(fmt.Sprintf("%s?page_num=%d", url, page))
 			checkErr(err)
-			log.Println("Program: ")
-			ScrapeProfessions(program.Base.Url)
+			programsBlocks = blocks
 		}
-		close(channelProgram)
-		log.Println("закончили работу в канале программ")
-		if hasPrograms == false {
+		if len(programsBlocks) == 0{
 			break
-		} else {
-			page++
 		}
+		var wg sync.WaitGroup
+		wg.Add(len(programsBlocks))
+		for _, item := range programsBlocks{
+			go scrapeProgram(item, specId, &wg)
+		}
+		wg.Wait()
+		
 	}
 }
 
-func scrapeOneProgram(h *colly.HTMLElement, channel chan models.Program) { 
-	program := models.Program{}
-	program.Base = scrapeBasic(h)
-	if program.Base == (models.Basic{}){
+func scrapeProgram(h *colly.HTMLElement, specId string, wg *sync.WaitGroup){ 
+	basic := scrapeBasic(h)
+	if !hasBasicInfo(basic){
 		return
 	}
+	program := models.Program{}
+	program.Base = basic
 	program.ID = primitive.NewObjectID()
 	program.VuzId = currentVuzId
 	program.ProgramId = strings.Split(program.Base.Url, "/")[len(strings.Split(program.Base.Url, "/"))-2]
-	c := colly.NewCollector()
-
-	// Забираем полное наименование программы 
-	c.OnHTML("h1[id=prTitle]", func(h *colly.HTMLElement) {
-		program.Base.Name = h.Text
-	})
-
-	// Выбираем уровень подготовки с помощью поиска подходящего варианта через регулярное выражение
-	c.OnHTML("div.detail-box", func(h *colly.HTMLElement) {
-		re := regexp.MustCompile("Бакалавриат|Специалитет|Магистратура|Подготовка специалистов среднего звена|Подготовка квалифицированных рабочих (служащих)")
-		program.Form = re.FindString(h.Text)
-	})
-
-	// Парсим описание программы
-	c.OnHTML("div.descr-max", func(h *colly.HTMLElement) {
-		program.Description = h.Text
-	})
-
-	// Парсим предметы ЕГЭ
-	c.OnHTML("div.score-box-wrap", func(h *colly.HTMLElement) {
-		h.ForEach("div.score-box", func(i int, h *colly.HTMLElement) {
-			if i == 1{
-				h.ForEach("div.score-box__item", func(i int, h *colly.HTMLElement) {
-					// score := h.ChildText("span.score-box__score") Не берем т.к без авторизации не показывается количество баллов
-					exam := strings.Split(h.Text, "или")[0] //  Обрезаем строку и оставляем только матешу: Математика или другиеили Иностранный языкили Обществознание
-					program.Exams = append(program.Exams, exam)
-				})
-			}
-		})
-	})
-
-	err := c.Post(program.Base.Url, Headers)
+	program.SpecId = specId
+	bodyHTMl, err := getBodyCodeFromUrl(program.Base.Url)
+	if err != nil{
+		fmt.Println("Catched the error. Program stopped to sleep of 10 seconds.")
+		time.Sleep(10*time.Second)
+		html, err := getBodyCodeFromUrl(program.Base.Url)
+		checkErr(err)
+		bodyHTMl = html
+	}
+	program.Description = getSpecializationDescription(bodyHTMl)
+	program.Base.Direction = getProgramDirection(h, specId)
+	program.Form = getFormEducation(bodyHTMl)
+	program.Exams = getSubjects(bodyHTMl)
+	program.HasProfessions, err = ScrapeProfessions(program.Base.Url)
+	if err != nil {
+		fmt.Println("Catched the error. Program stopped to sleep of 10 seconds.")
+		time.Sleep(10*time.Second)
+		program.HasProfessions, err = ScrapeProfessions(program.Base.Url)
+		checkErr(err)
+	}
+	fullname := getFullName(bodyHTMl)
+	if fullname != ""{
+		program.Base.Name = strings.Split(fullname, ":")[0]
+	}
+	err = mongo.AddProgram(&program)
 	checkErr(err)
-	channel <- program
+	log.Printf("Program:%s", program.ProgramId)
+	wg.Done()
 }
 
-func ScrapeProfessions(programUrl string) {
-	
+func ScrapeProfessions(programUrl string) (programHasProfessions bool, err error){
+	programHasProfessions = false
 	c := colly.NewCollector()
-
+	c.SetRequestTimeout(30 * time.Second)
 	// Забираем айдишник программы из url професси. Берем 477 из https://msk.postupi.online/vuz/mip/programma/477/
 	programId := strings.Split(programUrl, "/")[len(strings.Split(programUrl, "/"))-2]
-
 	c.OnHTML("div.list-cover li", func(h *colly.HTMLElement) {
+		programHasProfessions = true
 		newProfession := models.Profession{}
 		newProfession.ID = primitive.NewObjectID()
 		newProfession.Name = h.ChildText("h2")
@@ -266,18 +197,19 @@ func ScrapeProfessions(programUrl string) {
 
 		err := mongo.AddProfession(&newProfession)
 		checkErr(err)
-		// log.Println("Profession: ")
 	})
 
-	err := c.Post(programUrl + "professii/", Headers)
+	err = c.Post(programUrl + "professii/", Headers)
 	checkErr(err)
+	return 
 }
 
 
-func scrapeContacts(url string) {
+func scrapeContacts(url string) (err error){
 	contact := models.Contacts{}
 	contact.ID = primitive.NewObjectID()
 	c := colly.NewCollector()
+	c.SetRequestTimeout(30 * time.Second)
 
 	// Ищем 4 span блока с контактами вуза
 	c.OnHTML("section.section-box", func(h *colly.HTMLElement) {
@@ -294,16 +226,13 @@ func scrapeContacts(url string) {
 			contact.VuzId = currentVuzId
 		}
 	})
-	err := c.Post(url, Headers)
-	checkErr(err)
+	err = c.Post(url, Headers)
+	if err != nil {
+		return
+	}
 	err = mongo.AddContacts(&contact)
 	checkErr(err)
-	log.Println("Contact: ")
+	log.Printf("Contact:%s", contact.VuzId)
+	return
 }
 
-func checkErr(err error){
-	if err != nil{
-		log.Fatal(err)
-		panic(err)
-	}
-}

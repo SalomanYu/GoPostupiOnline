@@ -15,10 +15,7 @@ type Basic struct {
 	Image     		string				`bson:"image"`
 	Logo      		string				`bson:"logo"`
 	Cost      		string				`bson:"cost"`
-	BudgetScores		float64				`bson:"budget_score"`
-	PaymentScores	float64				`bson:"payment_score"`
-	BudgetPlaces	string 				`bson:"budget_places"`
-	PaymentPlaces	string				`bson:"payment_places"`
+	Scores			Scores				`bson:"scores"`
 }
 type Vuz struct {
 	ID				primitive.ObjectID	`bson:"_id"`
@@ -38,6 +35,7 @@ type Program struct {
 	ProgramId     	string				`bson:"program_id"`
 	SpecId        	string				`bson:"spec_id"`
 	VuzId 	string						`bson:"vuz_id"`
+	HasProfessions	bool				`bson:"has_professions"`
 	Description   	string				`bson:"description"`
 	Form          	string				`bson:"form"`
 	Exams         	[]string			`bson:"exams"`
@@ -56,4 +54,10 @@ type Contacts struct {
 	Email   		string				`bson:"email"`
 	Phone   		string				`bson:"phone"`
 	Address 		string				`bson:"address"`
+}
+type Scores struct {
+	PointsBudget	float64				`bson:"budget_points"`
+	PointsPayment	float64				`bson:"payment_points"`
+	PlacesBudget	string 				`bson:"budget_places"`
+	PlacesPayment	string				`bson:"payment_places"`
 }

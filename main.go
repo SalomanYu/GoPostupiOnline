@@ -22,6 +22,7 @@ func main() {
 	for i := 1; i <= pageCount; i++ {
 		url := domain + fmt.Sprintf("?page_num=%d", i)
 		c := colly.NewCollector()
+		c.SetRequestTimeout(30 * time.Second)
 		c.OnHTML("div.list-cover li.list", func(h *colly.HTMLElement) {
 			h.ForEach("div.list__info", func(i int, h *colly.HTMLElement) {
 				scraper.ScrapeVuz(h)
