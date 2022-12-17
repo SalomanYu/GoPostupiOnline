@@ -3,6 +3,7 @@ package scraper
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -137,6 +138,7 @@ func scrapeSpecializationPrograms(url string, specId string) {
 			go scrapeProgram(item, specId, &wg)
 		}
 		wg.Wait()
+		page++
 		
 	}
 }
@@ -173,7 +175,11 @@ func scrapeProgram(h *colly.HTMLElement, specId string, wg *sync.WaitGroup){
 	}
 	fullname := getFullName(bodyHTMl)
 	if fullname != ""{
-		program.Base.Name = strings.Split(fullname, ":")[0]
+		program.Base.Name = strings.Split(fullname, ":")[0] 
+		if program.Form == "Магистратура"{ // Названия программ у магистратуры выглядят следующим образом: Профиль магистратуры "Управление свойствами нетканых материалов" РГУ им. А.Н. Косыгина, Москва
+			re := regexp.MustCompile(`"(.*?)"`)
+			program.Base.Name = re.FindString(program.Base.Name)
+		}
 	}
 	err = mongo.AddProgram(&program)
 	checkErr(err)
@@ -200,7 +206,6 @@ func ScrapeProfessions(programUrl string) (programHasProfessions bool, err error
 	})
 
 	err = c.Post(programUrl + "professii/", Headers)
-	checkErr(err)
 	return 
 }
 
