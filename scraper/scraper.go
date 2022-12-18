@@ -38,7 +38,12 @@ func ScrapeVuz(h *colly.HTMLElement) {
 	institution.Base = basic
 	bodyHTML, err := getBodyCodeFromUrl(institution.Base.Url)
 	if err != nil{
+		fmt.Println("Catched the error. Program stopped to sleep of 10 seconds.")
 		time.Sleep(10*time.Second)
+		html, err := getBodyCodeFromUrl(institution.Base.Url)
+		checkErr(err)
+		bodyHTML = html
+	
 	}
 	institution.Description = getMiniDescription(bodyHTML)
 	fullname := getFullDescription(bodyHTML)
