@@ -195,6 +195,10 @@ func scrapeProgram(h *colly.HTMLElement, specId string, wg *sync.WaitGroup){
 func ScrapeProfessions(programUrl string) (programHasProfessions bool, err error){
 	programHasProfessions = false
 	c := colly.NewCollector()
+	badGateway := checkBadGateway(c)
+	if badGateway{
+		return
+	}
 	c.SetRequestTimeout(30 * time.Second)
 	// Забираем айдишник программы из url професси. Берем 477 из https://msk.postupi.online/vuz/mip/programma/477/
 	programId := strings.Split(programUrl, "/")[len(strings.Split(programUrl, "/"))-2]
@@ -219,6 +223,10 @@ func scrapeContacts(url string) (err error){
 	contact := models.Contacts{}
 	contact.ID = primitive.NewObjectID()
 	c := colly.NewCollector()
+	badGateway := checkBadGateway(c)
+	if badGateway{
+		return
+	}
 	c.SetRequestTimeout(30 * time.Second)
 
 	// Ищем 4 span блока с контактами вуза

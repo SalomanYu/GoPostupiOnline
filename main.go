@@ -22,6 +22,11 @@ func main() {
 	for i := 1; i <= pageCount; i++ {
 		url := domain + fmt.Sprintf("?page_num=%d", i)
 		c := colly.NewCollector()
+		c.OnError(func(r *colly.Response, err error) {
+			if r.StatusCode >= 500{
+				return
+			}
+		})
 		c.SetRequestTimeout(30 * time.Second)
 		c.OnHTML("div.list-cover li.list", func(h *colly.HTMLElement) {
 			h.ForEach("div.list__info", func(i int, h *colly.HTMLElement) {

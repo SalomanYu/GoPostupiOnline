@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -39,6 +40,10 @@ func getFullName(html *colly.HTMLElement) (name string){
 
 func getBodyCodeFromUrl(url string) (body *colly.HTMLElement, err error) {
 	c := colly.NewCollector()
+	badGateway := checkBadGateway(c)
+	if badGateway{
+		return
+	}
 	c.SetRequestTimeout(30 * time.Second)
 	c.OnHTML("body", func(h *colly.HTMLElement) {
 		body = h
@@ -58,6 +63,10 @@ func getFacts(body *colly.HTMLElement) (facts string){
 
 func findHtmlBlocks(blocksUrl string) (blocks []*colly.HTMLElement, err error){
 	c := colly.NewCollector()
+	badGateway := checkBadGateway(c)
+	if badGateway{
+		return
+	}
 	c.SetRequestTimeout(30 * time.Second)
 	c.OnHTML("div.list-cover", func(h *colly.HTMLElement) {
 			h.ForEach("li.list", func(i int, h *colly.HTMLElement) {
@@ -103,7 +112,7 @@ func getScores(html *colly.HTMLElement)(scores models.Scores){
 		case strings.Contains(e.Text, "бюджетных мест") && !strings.Contains("нет", e.ChildText("b")):
 			scores.PlacesBudget = e.ChildText("b")
 		case strings.Contains(e.Text, "платных мест") && !strings.Contains("нет", e.ChildText("b")):
-			scores.PlacesBudget = e.ChildText("b")
+			scores.PlacesPayment = e.ChildText("b")
 		}
 	})
 	return
@@ -137,6 +146,16 @@ func getSubjects(body *colly.HTMLElement) (subjects []string){
 				exam := strings.Split(h.Text, "или")[0] //  Обрезаем строку и оставляем только матешу: Математика или другиеили Иностранный языкили Обществознание
 				subjects = append(subjects, exam)
 			})
+		}
+	})
+	return
+}
+
+func checkBadGateway(c *colly.Collector) (badGateway bool){
+	c.OnError(func(r *colly.Response, err error) {
+		if r.StatusCode >= 500{
+			badGateway = true
+			return
 		}
 	})
 	return
