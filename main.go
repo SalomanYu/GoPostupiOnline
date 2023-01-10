@@ -6,16 +6,16 @@ import (
 	"time"
 
 	"github.com/SalomanYu/GoPostupiOnline/scraper"
-
 	"github.com/gocolly/colly"
 )
 
 var (
-	domain    = "https://postupi.online/vuzi/"
-	pageCount = 52
-
+	domain = "https://postupi.online/ssuzy/"
+	pageCount = 62
+	formEducations = []string{"specialnosti/spo/", "specialnosti/npo"}
+	defaultFormEducation = "Подготовка квалифицированных рабочих (служащих)"
+	tagNameForListBlocks = "list-wrap"
 )
-
 
 func main() {
 	start := time.Now().Unix()
@@ -29,9 +29,7 @@ func main() {
 		})
 		c.SetRequestTimeout(30 * time.Second)
 		c.OnHTML("div.list-cover li.list", func(h *colly.HTMLElement) {
-			h.ForEach("div.list__info", func(i int, h *colly.HTMLElement) {
 				scraper.ScrapeVuz(h)
-			})
 		})
 		err := c.Post(url, scraper.Headers)
 		check_err(err)

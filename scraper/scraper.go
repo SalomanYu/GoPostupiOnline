@@ -16,7 +16,9 @@ import (
 )
 
 var currentVuzId, currentSpecId string
-var formEducation = []string{"specialnosti/bakalavr/", "specialnosti/specialist/", "specialnosti/magistratura/"}
+// var formEducations = []string{"specialnosti/bakalavr/", "specialnosti/specialist/", "specialnosti/magistratura/"}
+
+
 var Headers = map[string]string{
 			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
 			"sec-ch-ua":  `Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"`,
@@ -24,6 +26,7 @@ var Headers = map[string]string{
 			"cookie":     "yandexuid=6850906421666216763; yabs-sid=1696581601666216766; yuidss=6850906421666216763; ymex=1981576766.yrts.1666216766#1981576766.yrtsi.1666216766; gdpr=0; _ym_uid=1666216766168837185; _ym_d=1666216766; yandex_login=rosya-8; i=Peh4utbtslQvge42D7cbDtH7CwXIiDs5Yp6IXWYsxx/SEQD1HtUncw/qqJV7NXqNqOS81fsaJSedcq/Ds9+yOfVKCNQ=; is_gdpr=0; skid=6879224341667473690; ys=udn.cDrQr9GA0L7RgdC70LDQsg%3D%3D#c_chck.841052032; is_gdpr_b=CIyaHxCclAE=; Session_id=3:1668355426.5.0.1666216795333:P19ouQ:2f.1.2:1|711384492.0.2|3:10261113.753043.lm80KKusrHll2DmXDLpHMjsmBYY; sessionid2=3:1668355426.5.0.1666216795333:P19ouQ:2f.1.2:1|711384492.0.2|3:10261113.753043.fakesign0000000000000000000; _ym_isad=1; _ym_visorc=b",
 			"Content-Type": "text/html",
 		}
+
 
 func ScrapeVuz(h *colly.HTMLElement) {
 	// Надо еще рефачить и делить метод
@@ -64,7 +67,8 @@ func ScrapeVuz(h *colly.HTMLElement) {
 	err = mongo.AddVuz(&institution)
 	checkErr(err)
 	log.Printf("Vuz:%s", institution.VuzId)
-	for _, form := range formEducation {
+	var formEducations = []string{"specialnosti/spo/", "specialnosti/npo"}
+	for _, form := range formEducations {
 		scrapeVuzSpecializations(basic.Url + form)
 	}
 }

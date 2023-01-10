@@ -18,7 +18,7 @@ var (
 	collectionProfession 	*mongo.Collection
 	ctx 				 =  context.TODO()
 	vuzCount int
-
+	dbName = "postupi_online_colleges"
 )
 
 func init(){
@@ -29,11 +29,11 @@ func init(){
 	err = client.Ping(ctx, nil)
 	check_err(err)
 
-	collectionVuz = client.Database("PostupiOnline").Collection("Vuz")
-	collectionSpec = client.Database("PostupiOnline").Collection("Specialization")
-	collectionProgram = client.Database("PostupiOnline").Collection("Program")
-	collectionProfession = client.Database("PostupiOnline").Collection("Profession")
-	collectionContacts = client.Database("PostupiOnline").Collection("Contacts")
+	collectionVuz = client.Database(dbName).Collection("Vuz")
+	collectionSpec = client.Database(dbName).Collection("Specialization")
+	collectionProgram = client.Database(dbName).Collection("Program")
+	collectionProfession = client.Database(dbName).Collection("Profession")
+	collectionContacts = client.Database(dbName).Collection("Contacts")
 }
 
 func AddVuz(vuz *models.Vuz) error{

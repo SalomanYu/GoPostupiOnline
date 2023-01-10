@@ -1,6 +1,7 @@
 package scraper
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -18,11 +19,13 @@ func scrapeBasic(h *colly.HTMLElement) (basic models.Basic) {
 	basic.Description = getFullDescription(h)
 	basic.Scores = getScores(h)
 	basic.Url = h.ChildAttr("a", "href")
-	basic.Image = h.ChildAttr("img", "data-dt")
+	basic.Image = h.ChildAttr("img.img-load", "data-dt")
 	basic.Cost = h.ChildText("span.list__price b")
 	basic.Name = h.ChildText("h2.list__h")
 	basic.Logo = h.ChildAttr("img.list__img-sm", "src")
 	basic.Direction = h.ChildText("p.list__pre")
+	fmt.Println("Image:", basic.Image)
+	fmt.Println("Logo:", basic.Logo)
 	return 
 }
 
