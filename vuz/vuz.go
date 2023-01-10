@@ -29,7 +29,11 @@ func Start() {
 				scraper.ScrapeVuz(h)
 		})
 		err := c.Post(url, scraper.Headers)
-		check_err(err)
+		if err != nil {
+			fmt.Println("Catched the error. Program stopped to sleep of 10 seconds.")
+			time.Sleep(10*time.Second)
+			err = c.Post(url, scraper.Headers)
+		}
 	}
 }
 
