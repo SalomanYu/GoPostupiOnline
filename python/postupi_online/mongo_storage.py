@@ -2,7 +2,7 @@ import pymongo
 
 from models import *
 
-dbname = "postupi_online_vuzes"
+dbname = "postupi_online_colleges"
 
 def getAllVuzes() -> list[Vuz]:
     client = pymongo.MongoClient("mongodb://localhost:27017/")

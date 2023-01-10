@@ -10,11 +10,11 @@ import (
 )
 
 var (
-	domain = "https://postupi.online/vuzi/"
-	pageCount = 52
+	domain = "https://postupi.online/ssuzy/"
+	pageCount = 62
 	// formEducations = []string{"specialnosti/spo/", "specialnosti/npo"}
-	defaultFormEducation = "Бакалавриат"
-	tagNameForListBlocks = "list-unstyled.list-wrap"
+	defaultFormEducation = "Подготовка квалифицированных рабочих (служащих)"
+	tagNameForListBlocks = "list-wrap"
 )
 
 func main() {

@@ -67,8 +67,8 @@ func ScrapeVuz(h *colly.HTMLElement) {
 	err = mongo.AddVuz(&institution)
 	checkErr(err)
 	log.Printf("Vuz:%s", institution.VuzId)
-	// var formEducations = []string{"specialnosti/spo/", "specialnosti/npo"}
-	var formEducations = []string{"specialnosti/bakalavr/", "specialnosti/specialist/", "specialnosti/magistratura/"}
+	var formEducations = []string{"specialnosti/spo/", "specialnosti/npo"}
+	// var formEducations = []string{"specialnosti/bakalavr/", "specialnosti/specialist/", "specialnosti/magistratura/"}
 	for _, form := range formEducations {
 		scrapeVuzSpecializations(basic.Url + form)
 	}
