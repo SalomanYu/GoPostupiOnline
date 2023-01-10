@@ -1,7 +1,7 @@
 import sqlite3
 from models import *
 
-DATABASE_POSTUPI = "postupi_online.db"
+DATABASE_POSTUPI = "postupi_online_colleges.db"
 TABLE_VUZES = "vuzes"
 TABLE_SPECS = "specializations"
 TABLE_PROGRAMS = "programs"
@@ -157,3 +157,10 @@ def getVuzes() -> list[tuple[str]]:
     vuzes = cursor.fetchall()
     db.close()
     return vuzes
+
+def getSpecs() -> list[tuple[str]]:
+    db, cursor = connect_to_sql(DATABASE_POSTUPI)
+    cursor.execute(f"SELECT * FROM {TABLE_SPECS}")
+    specs = cursor.fetchall()
+    db.close()
+    return specs

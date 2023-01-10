@@ -24,8 +24,6 @@ func scrapeBasic(h *colly.HTMLElement) (basic models.Basic) {
 	basic.Name = h.ChildText("h2.list__h")
 	basic.Logo = h.ChildAttr("img.list__img-sm", "src")
 	basic.Direction = h.ChildText("p.list__pre")
-	fmt.Println("Image:", basic.Image)
-	fmt.Println("Logo:", basic.Logo)
 	return 
 }
 

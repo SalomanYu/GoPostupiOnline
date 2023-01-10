@@ -2,9 +2,11 @@ import pymongo
 
 from models import *
 
+dbname = "postupi_online_vuzes"
+
 def getAllVuzes() -> list[Vuz]:
     client = pymongo.MongoClient("mongodb://localhost:27017/")
-    db = client["PostupiOnline"]
+    db = client[dbname]
     collection = db["Vuz"]
     vuzes:list[Vuz] = []
     for item in collection.find():
@@ -17,7 +19,7 @@ def getAllVuzes() -> list[Vuz]:
 
 def getAllSpecs() -> list[Specialization]:
     client = pymongo.MongoClient("mongodb://localhost:27017/")
-    db = client["PostupiOnline"]
+    db = client[dbname]
     collection = db["Specialization"]
     specs:list[Specialization] = []
     for item in collection.find():
@@ -31,7 +33,7 @@ def getAllSpecs() -> list[Specialization]:
 
 def getAllPrograms() -> list[Program]:
     client = pymongo.MongoClient("mongodb://localhost:27017/")
-    db = client["PostupiOnline"]
+    db = client[dbname]
     collection = db["Program"]
     programs:list[Program] = [] 
     for item in collection.find():
@@ -51,7 +53,7 @@ def getAllPrograms() -> list[Program]:
 
 def getProfessions() -> list[Profession]:
     client = pymongo.MongoClient("mongodb://localhost:27017/")
-    db = client["PostupiOnline"]
+    db = client[dbname]
     collection = db["Profession"]
     professions:list[Profession] = []
     for item in collection.find():
@@ -64,7 +66,7 @@ def getProfessions() -> list[Profession]:
 
 def getContacts() -> list[Contacts]:
     client = pymongo.MongoClient("mongodb://localhost:27017/")
-    db = client["PostupiOnline"]
+    db = client[dbname]
     collection = db["Contacts"]
     contacts:list[Contacts] = []
     for item in collection.find():
