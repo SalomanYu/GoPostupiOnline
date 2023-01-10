@@ -18,7 +18,7 @@ var (
 	collectionProfession 	*mongo.Collection
 	ctx 				 =  context.TODO()
 	vuzCount int
-	dbName = "postupi_online_colleges"
+	dbName = "postupi_online_vuzes"
 )
 
 func init(){
